@@ -3527,30 +3527,40 @@ img, video, canvas, svg { max-width: 100%; }
 
 <!-- ===== Nova gym coach (top-right avatar, bring-your-own Anthropic key) ===== -->
 <style>
+  /* ---- Nova FAB — reactor avatar ---- */
   #nvFab {
     position: fixed; top: calc(env(safe-area-inset-top) + 56px); right: 14px; z-index: 60;
     width: 46px; height: 46px; border-radius: 50%; border: 0; cursor: pointer; padding: 0;
-    overflow: hidden; -webkit-tap-highlight-color: transparent; transition: transform 0.12s;
-    background: radial-gradient(circle at 50% 58%, #8A6CFF, #4C2EC9 80%);
-    box-shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 6px 22px rgba(124,92,255,0.55),
-                inset 0 -6px 14px rgba(38,10,86,0.65);
-    font-size: 22px; line-height: 1; display: flex; align-items: center; justify-content: center;
+    -webkit-tap-highlight-color: transparent; transition: transform 0.12s;
+    background: transparent; display: grid; place-items: center;
+    --c1: #7dd3fc; --c2: #a5b4fc; --c3: #1e3a8a;
   }
   #nvFab:active { transform: scale(0.93); }
-  /* swirling conic plasma */
-  #nvFab::before {
-    content: ''; position: absolute; inset: -28%; border-radius: 50%;
-    background: conic-gradient(from 0deg, #6D4AE0, #C9B8FF, #7C5CFF, #B98AFF, #8A6CFF, #6D4AE0);
-    filter: blur(2px); opacity: 0.92; animation: nvspin 7s linear infinite;
-  }
-  /* glassy gloss highlight + bottom shade */
-  #nvFab::after {
-    content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
-    background: radial-gradient(circle at 34% 26%, rgba(255,255,255,0.92), rgba(255,255,255,0) 40%),
-                radial-gradient(circle at 72% 82%, rgba(18,7,40,0.5), transparent 55%);
-  }
-  @keyframes nvspin { to { transform: rotate(360deg); } }
   #nvFab .nv-online { position: absolute; right: 1px; bottom: 1px; z-index: 2; width: 11px; height: 11px; border-radius: 50%; background: #6ee7b7; border: 2px solid #0a0a0b; box-shadow: 0 0 6px rgba(110,231,183,0.7); }
+  /* reactor rings */
+  .av { --s: 46px; width: var(--s); height: var(--s); position: relative; flex-shrink: 0; }
+  .av--reactor { display: grid; place-items: center; animation: 4.5s ease-in-out infinite nvFloatY; }
+  .av--reactor::before {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent, var(--c2), transparent 55%, var(--c1), transparent);
+    -webkit-mask: radial-gradient(closest-side, transparent 58%, #000 60%);
+    mask: radial-gradient(closest-side, transparent 58%, #000 60%);
+    animation: 6s linear infinite nvSpin;
+  }
+  .av--reactor::after {
+    content: ""; position: absolute; inset: 18%; border-radius: 50%;
+    background: conic-gradient(from 180deg, transparent, var(--c1), transparent 50%, var(--c2), transparent);
+    -webkit-mask: radial-gradient(closest-side, transparent 48%, #000 50%);
+    mask: radial-gradient(closest-side, transparent 48%, #000 50%);
+    animation: 3.4s linear infinite reverse nvSpin;
+  }
+  .av--reactor i { display: block; width: 34%; height: 34%; border-radius: 50%; z-index: 1; background: radial-gradient(circle at 35% 30%, #fff, var(--c1) 60%, var(--c3)); box-shadow: 0 0 18px var(--c1); }
+  #nvFab[data-state="think"] .av--reactor::before { animation-duration: 1.6s; }
+  #nvFab[data-state="think"] .av--reactor::after  { animation-duration: 1s; }
+  #nvFab[data-state="happy"] .av--reactor i { animation: 0.5s nvPop; }
+  @keyframes nvFloatY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  @keyframes nvSpin   { 100% { transform: rotate(360deg); } }
+  @keyframes nvPop    { 0% { transform: scale(1); } 40% { transform: scale(1.18); } 100% { transform: scale(1); } }
   #nvPanel {
     position: fixed; top: calc(env(safe-area-inset-top) + 110px); right: 14px; z-index: 60;
     width: min(340px, calc(100vw - 28px)); max-height: 66vh; display: none; flex-direction: column;
@@ -3582,7 +3592,10 @@ img, video, canvas, svg { max-width: 100%; }
   .nv-dots i:nth-child(2){animation-delay:.15s} .nv-dots i:nth-child(3){animation-delay:.3s}
   @keyframes nvb { 0%,100%{opacity:.3;transform:translateY(0)} 50%{opacity:1;transform:translateY(-3px)} }
 </style>
-<button id="nvFab" type="button" aria-label="Open Nova coach">🧠<span class="nv-online"></span></button>
+<button id="nvFab" type="button" aria-label="Open Nova coach" data-state="idle">
+  <div class="av av--reactor"><i></i></div>
+  <span class="nv-online"></span>
+</button>
 <div id="nvPanel" role="dialog" aria-label="Nova gym coach">
   <div class="nv-head">
     <div class="nv-av"></div>
@@ -3622,6 +3635,7 @@ img, video, canvas, svg { max-width: 100%; }
     return out;
   }
   function addMsg(who, html){ const d=document.createElement('div'); d.className='nv-msg '+who; d.innerHTML=html; body.appendChild(d); body.scrollTop=body.scrollHeight; return d; }
+  function setOrbState(s){ fab.dataset.state = s; }
 
   function readLS(k,f){ try{ const v=JSON.parse(localStorage.getItem(k)); return v==null?f:v; }catch(e){ return f; } }
   function sanitize(v, depth){
@@ -3657,7 +3671,7 @@ img, video, canvas, svg { max-width: 100%; }
     const key = savedKey();
     addMsg('user', md(text));
     if (!key){ addMsg('coach', md("Paste your **Anthropic API key** on the Nova page first (the 🧠 tile on the home screen) — it's saved in this browser and I'll use it here too.")); return; }
-    busy = true;
+    busy = true; setOrbState('think');
     const loading = addMsg('coach', '<span class="nv-dots"><i></i><i></i><i></i></span>');
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -3666,10 +3680,11 @@ img, video, canvas, svg { max-width: 100%; }
         body: JSON.stringify({ model:'claude-opus-4-8', max_tokens:1024, system: SYS + gymContext(), messages:[{role:'user', content:text}] }),
       });
       const json = await res.json();
-      if (json.error){ loading.innerHTML = md('- ' + (json.error.message || 'Something went wrong — check your API key.')); busy=false; return; }
+      if (json.error){ loading.innerHTML = md('- ' + (json.error.message || 'Something went wrong — check your API key.')); setOrbState('idle'); busy=false; return; }
       const reply = (json.content && json.content[0] && json.content[0].text) || 'Hmm, no reply.';
       loading.innerHTML = md(reply);
-    } catch(e){ loading.innerHTML = md('- Could not reach Anthropic — check your connection and key.'); }
+      setOrbState('happy'); setTimeout(()=>setOrbState('idle'), 1200);
+    } catch(e){ loading.innerHTML = md('- Could not reach Anthropic — check your connection and key.'); setOrbState('idle'); }
     body.scrollTop = body.scrollHeight; busy = false;
   }
 
