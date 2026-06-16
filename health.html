@@ -676,7 +676,7 @@ main {
   (function () {
     const KEY = 'whoop_tokens_v1';
     const CLIENT_ID = 'e75721e3-23de-4efb-9af3-5b88c28c46be';
-    const REDIRECT  = window.location.origin + '/api/whoop-callback';
+    const REDIRECT  = 'https://mi-dashboard-2-0.vercel.app/api/whoop-callback';
     const SCOPES    = 'read:recovery read:sleep read:workout read:cycles read:profile read:body_measurement offline';
 
     function load() { try { return JSON.parse(localStorage.getItem(KEY)); } catch { return null; } }
